@@ -1,0 +1,66 @@
+import pandas as pd
+!pip install pandas
+!pip install matplotlib
+!pip install wordcloud
+!pip install nltk
+!pip install scikit-learn
+!pip install gensim
+
+
+ #Most appropriate model
+import pandas as pd
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+import nltk
+from nltk.corpus import stopwords
+from gensim import corpora
+from gensim.models.ldamodel import LdaModel
+from gensim.models import CoherenceModel
+import nltk
+nltk.download('stopwords')
+
+
+texts = data['new_cleaned_text'].dropna().tolist()  # Assuming this column contains cleaned text
+
+# Tokenization and stopwords removal
+texts = [[word for word in document.lower().split() if word not in set(stopwords.words('english'))]
+         for document in texts]
+
+# Creating the term dictionary of our corpus, where every unique term is assigned an index
+dictionary = corpora.Dictionary(texts)
+
+# Converting list of documents (corpus) into Document Term Matrix using the dictionary prepared above
+corpus = [dictionary.doc2bow(text) for text in texts]
+
+# Creating the LDA model
+num_topics = 100
+ldamodel = LdaModel(corpus, num_topics=num_topics, id2word=dictionary, passes=15, random_state=42)
+
+# Function to display topics
+
+def display_topics(model, num_topics):
+    for i in range(num_topics):
+        words = model.show_topic(i)
+        print(f"Topic {i+1}:")
+        print(", ".join([word for word, prob in words]))
+        print("\n" + "-"*50 + "\n")
+
+display_topics(ldamodel, num_topics)
+
+# Coherence score
+coherence_model_lda = CoherenceModel(model=ldamodel, texts=texts, dictionary=dictionary, coherence='c_v')
+coherence_score = coherence_model_lda.get_coherence()
+print(f"Coherence Score: {coherence_score}")
+
+# Plotting word clouds for each topic
+def plot_wordcloud(model, num_topics):
+    for i in range(num_topics):
+        plt.figure(figsize=(10, 10))
+        wc = WordCloud(background_color='white', width=800, height=400)
+        wc.generate_from_frequencies(dict(model.show_topic(i, 200)))
+        plt.imshow(wc, interpolation='bilinear')
+        plt.axis("off")
+        plt.title(f"Topic {i+1} Word Cloud")
+        plt.show()
+
+plot_wordcloud(ldamodel, num_topics)
